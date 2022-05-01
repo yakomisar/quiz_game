@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"time"
 )
 
 type questions struct {
@@ -22,7 +23,12 @@ func transformQuestions(data [][]string) []questions {
 	return questionsList
 }
 
+func stopGame(endGame chan<- bool) {
+
+}
+
 func main() {
+	gameOver := make(chan bool)
 	file, err := os.Open("problems.csv")
 	if err != nil {
 		panic(err)
@@ -35,5 +41,16 @@ func main() {
 	}
 
 	quiz := transformQuestions(data)
-	fmt.Println(quiz)
+	for index, q := range quiz {
+		fmt.Printf("Problem #%d: %v\n", index, q.question)
+
+		<-time.After(time.Second * 3)
+	}
+
+	select {
+	case <-gameOver:
+		fmt.Printf("You scored %d out of 999\n", result)
+	case <-time.After(4 * time.Second):
+		fmt.Println("There's no more time to this. Exiting!")
+	}
 }
