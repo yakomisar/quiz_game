@@ -8,8 +8,10 @@ import (
 )
 
 type questions struct {
-	question string
-	answer   string
+	question    string
+	answer      string
+	user_answer string
+	is_correct  bool
 }
 
 func transformQuestions(data [][]string) []questions {
@@ -18,17 +20,14 @@ func transformQuestions(data [][]string) []questions {
 		var question questions
 		question.question = val[0]
 		question.answer = val[1]
+		question.user_answer = ""
+		question.is_correct = false
 		questionsList = append(questionsList, question)
 	}
 	return questionsList
 }
 
-func stopGame(endGame chan<- bool) {
-
-}
-
 func main() {
-	gameOver := make(chan bool)
 	file, err := os.Open("problems.csv")
 	if err != nil {
 		panic(err)
@@ -39,18 +38,26 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
+	stopGame := time.NewTimer(time.Second * 10)
 	quiz := transformQuestions(data)
+	correct := 0
 	for index, q := range quiz {
-		fmt.Printf("Problem #%d: %v\n", index, q.question)
-
-		<-time.After(time.Second * 3)
+		fmt.Printf("Problem #%d: %v = ", index, q.question)
+		answerCh := make(chan string)
+		go func() {
+			var answer string
+			fmt.Scan(&answer)
+			answerCh <- answer
+		}()
+		select {
+		case <-stopGame.C:
+			fmt.Printf("\nTime is over. You scored %d out of %d", correct, len(quiz))
+			return
+		case q.user_answer = <-answerCh:
+			if q.user_answer == q.answer {
+				correct++
+			}
+		}
 	}
-
-	select {
-	case <-gameOver:
-		fmt.Printf("You scored %d out of 999\n", result)
-	case <-time.After(4 * time.Second):
-		fmt.Println("There's no more time to this. Exiting!")
-	}
+	fmt.Printf("You scored %d out of %d", correct, len(quiz))
 }
